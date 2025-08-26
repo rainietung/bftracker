@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>男友點心紙</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+  <div class="max-w-md mx-auto bg-white p-6 rounded-2xl shadow-lg">
+    <h1 class="text-xl font-bold text-center mb-4">男友點心紙</h1>
+    
+    <!-- 新增項目 -->
+    <div class="flex mb-4">
+      <input id="newItem" type="text" placeholder="輸入項目 (例: 放題)"
+        class="flex-grow border rounded-l-xl px-3 py-2">
+      <button onclick="addItem()"
+        class="bg-blue-500 text-white px-4 py-2 rounded-r-xl">新增</button>
+    </div>
+
+    <!-- 項目列表 -->
+    <div id="itemList" class="space-y-3"></div>
+
+    <!-- 統計 -->
+    <div class="mt-6">
+      <h2 class="text-lg font-semibold">📅 統計</h2>
+      <p id="stats">每天: 0 | 每週: 0 | 每月: 0</p>
+    </div>
+<div class="mt-4 text-center">
+  <button onclick="clearRecords()"
+    class="bg-red-500 text-white px-4 py-2 rounded-xl">清空所有紀錄</button>
+</div>
+  </div>
+
+  <script>
+    async function fetchItems() {
+      const res = await fetch("/api/items");
+      const data = await res.json();
+      renderItems(data);
+    }
+
+    function renderItems(items) {
+      const list = document.getElementById("itemList");
+      list.innerHTML = "";
+      items.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "flex justify-between items-center bg-gray-50 p-3 rounded-xl";
+        div.innerHTML = `
+          <span class="font-medium">${item.name}</span>
+          <button onclick="increment(${item.id})"
+            class="bg-green-500 text-white px-3 py-1 rounded-xl">+1</button>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    async function addItem() {
+      const name = document.getElementById("newItem").value.trim();
+      if (!name) return;
+      await fetch("/api/items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name })
+      });
+      document.getElementById("newItem").value = "";
+      fetchItems();
+    }
+
+    async function increment(id) {
+      await fetch(`/api/items/${id}/increment`, { method: "POST" });
+      updateStats();
+    }
+
+    async function updateStats() {
+      const res = await fetch("/api/stats");
+      const stats = await res.json();
+      document.getElementById("stats").innerText =
+        `每天: ${stats.daily} | 每週: ${stats.weekly} | 每月: ${stats.monthly}`;
+    }
+
+    async function clearRecords() {
+      if (!confirm("確定要清空所有紀錄嗎？")) return;
+      const res = await fetch('/clear', { method: 'POST' });
+      const msg = await res.text();
+      alert(msg);
+      updateStats();
+    }
+
+
+    // 初始載入
+    fetchItems();
+    updateStats();
+  </script>
+</body>
+</html>
