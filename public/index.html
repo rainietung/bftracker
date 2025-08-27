@@ -1,35 +1,37 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>男友點心紙</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>我的習慣計數器</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 p-4">
   <div class="max-w-md mx-auto bg-white p-6 rounded-2xl shadow-lg">
-    <h1 class="text-xl font-bold text-center mb-4">男友點心紙</h1>
-    
+    <h1 class="text-xl font-bold text-center mb-4">📊 我的習慣計數器</h1>
+
     <!-- 新增項目 -->
     <div class="flex mb-4">
-      <input id="newItem" type="text" placeholder="輸入項目 (例: 放題)"
-        class="flex-grow border rounded-l-xl px-3 py-2">
+      <input id="newItem" type="text" placeholder="輸入項目 (例: 喝水)"
+             class="flex-grow border rounded-l-xl px-3 py-2" />
       <button onclick="addItem()"
-        class="bg-blue-500 text-white px-4 py-2 rounded-r-xl">新增</button>
+              class="bg-blue-500 text-white px-4 py-2 rounded-r-xl">新增</button>
     </div>
 
     <!-- 項目列表 -->
     <div id="itemList" class="space-y-3"></div>
 
-    <!-- 統計 -->
+    <!-- 全站統計 -->
     <div class="mt-6">
-      <h2 class="text-lg font-semibold">📅 統計</h2>
+      <h2 class="text-lg font-semibold">📅 全站統計</h2>
       <p id="stats">每天: 0 | 每週: 0 | 每月: 0</p>
     </div>
-<div class="mt-4 text-center">
-  <button onclick="clearRecords()"
-    class="bg-red-500 text-white px-4 py-2 rounded-xl">清空所有紀錄</button>
-</div>
+
+    <!-- 清空按鈕 -->
+    <div class="mt-4 text-center">
+      <button onclick="clearRecords()"
+              class="bg-red-500 text-white px-4 py-2 rounded-xl">清空所有紀錄</button>
+    </div>
   </div>
 
   <script>
@@ -42,14 +44,26 @@
     function renderItems(items) {
       const list = document.getElementById("itemList");
       list.innerHTML = "";
+
       items.forEach(item => {
+        // 單一項目的卡片：名稱 + +1 按鈕 + 各期間統計
         const div = document.createElement("div");
-        div.className = "flex justify-between items-center bg-gray-50 p-3 rounded-xl";
+        div.className = "bg-gray-50 p-3 rounded-xl";
+
         div.innerHTML = `
-          <span class="font-medium">${item.name}</span>
-          <button onclick="increment(${item.id})"
-            class="bg-green-500 text-white px-3 py-1 rounded-xl">+1</button>
+          <div class="flex justify-between items-center">
+            <span class="font-medium">${item.name}</span>
+            <button onclick="increment(${item.id})"
+              class="bg-green-500 text-white px-3 py-1 rounded-xl">+1</button>
+          </div>
+          <div class="text-sm text-gray-600 mt-2 grid grid-cols-4 gap-2">
+            <div><span class="font-semibold">總計</span><br>${item.total}</div>
+            <div><span class="font-semibold">今天</span><br>${item.daily}</div>
+            <div><span class="font-semibold">本週</span><br>${item.weekly}</div>
+            <div><span class="font-semibold">本月</span><br>${item.monthly}</div>
+          </div>
         `;
+
         list.appendChild(div);
       });
     }
@@ -63,12 +77,15 @@
         body: JSON.stringify({ name })
       });
       document.getElementById("newItem").value = "";
-      fetchItems();
+      await fetchItems();
     }
 
     async function increment(id) {
       await fetch(`/api/items/${id}/increment`, { method: "POST" });
-      updateStats();
+      // 重新抓清單，讓該項目的統計即時更新
+      await fetchItems();
+      // 同時更新全站統計
+      await updateStats();
     }
 
     async function updateStats() {
@@ -83,9 +100,9 @@
       const res = await fetch('/clear', { method: 'POST' });
       const msg = await res.text();
       alert(msg);
-      updateStats();
+      await fetchItems();
+      await updateStats();
     }
-
 
     // 初始載入
     fetchItems();
